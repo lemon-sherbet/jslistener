@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <signal.h>
 #include <dirent.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <linux/limits.h>
 #include <allegro5/allegro.h>
 
 int running = 1;
@@ -16,13 +20,14 @@ int run_command(char* cmd) {
 	while ((ent = readdir (procdir)) != NULL) {
 		int pid = atoi(ent->d_name);
 		if (pid > 1000) { //pids < 1000 arent userspace
-			char path[64];
+			char path[PATH_MAX];
 			sprintf(path, "/proc/%i/cmdline", pid);
 			int fd = open(path, O_RDONLY);
-			char cmdline[64];
+			char cmdline[PATH_MAX];
 			read(fd, cmdline, strlen(cmd)+1);
 			if (strcmp(cmd, cmdline) == 0) {
 				//process running
+				printf("'%s' is already running\n", cmd);
 				close(fd);
 				closedir(procdir);
 				return 0;
@@ -32,6 +37,7 @@ int run_command(char* cmd) {
 	}
 	closedir(procdir);
 
+	printf("running '%s'\n", cmd);
 	system(cmd);
 	return 1;
 }
@@ -41,16 +47,28 @@ int main() {
 	al_init();
 	al_install_joystick();
 
+	//cd to executable path, because binds.txt msut be in the same directory as the executable
+
+  pid_t pid = getpid();
+	char procpath[PATH_MAX];
+  sprintf(procpath, "/proc/%d/exe", pid);
+  char exepath[PATH_MAX];
+  readlink(procpath, exepath, PATH_MAX); //shouldnt fail
+	int c, i;
+	for (i = strlen(exepath); (c = exepath[i]) != '/'; i--); //get directory path from exe file path
+	exepath[i] = '\0';
+	chdir(exepath);
+
 	FILE* binds = fopen("binds.txt", "r");
 	if (!binds) {
-		printf("couldn't open binds file");
+		printf("couldn't open binds file\n");
 		return 1;
 	}
 
 	int button_combo[12];
 	int button_combo_size = 0;
 	int button_combo_strict = false; //if enabled, the combo must end with the correct button
-	char combo_command[64] = "";
+	char combo_command[PATH_MAX] = "";
 
 	while (!feof(binds) && !ferror(binds)) {
 		int c = getc(binds);
