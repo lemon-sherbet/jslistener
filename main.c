@@ -49,11 +49,11 @@ int main() {
 
 	//cd to executable path, because binds.txt msut be in the same directory as the executable
 
-  pid_t pid = getpid();
+	pid_t pid = getpid();
 	char procpath[PATH_MAX];
-  sprintf(procpath, "/proc/%d/exe", pid);
-  char exepath[PATH_MAX];
-  readlink(procpath, exepath, PATH_MAX); //shouldnt fail
+	sprintf(procpath, "/proc/%d/exe", pid);
+	char exepath[PATH_MAX];
+	readlink(procpath, exepath, PATH_MAX); //shouldnt fail
 	int c, i;
 	for (i = strlen(exepath); (c = exepath[i]) != '/'; i--); //get directory path from exe file path
 	exepath[i] = '\0';
