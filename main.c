@@ -29,8 +29,8 @@ int run_command(char* cmd) {
 			}
 			close(fd);
 		}
-  }
-  closedir(procdir);
+	}
+	closedir(procdir);
 
 	system(cmd);
 	return 1;
@@ -69,10 +69,6 @@ int main() {
 	fclose(binds);
 
 	ALLEGRO_JOYSTICK* joy = al_get_joystick(0);
-	if (!joy) {
-		printf("couldn't open joystick\n");
-		return 1;
-	}
 
 	ALLEGRO_EVENT_QUEUE* event_queue;
 	event_queue = al_create_event_queue();
@@ -83,7 +79,7 @@ int main() {
 	while (running) {
 		ALLEGRO_EVENT event;
 		al_wait_for_event_timed(event_queue, &event, 10);
-		if (event.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN) {
+		if (joy && event.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN) {
 			int b = event.joystick.button;
 			//printf("button %i\n", b);
 			if (button_combo_strict ? b == button_combo[button_combo_size-1] : 1) {
@@ -98,6 +94,10 @@ int main() {
 			run_command(combo_command);
 			
 			//printf("you did the combo\n");
+		} else if (event.type == ALLEGRO_EVENT_JOYSTICK_CONFIGURATION) {
+			//joystick may have been connected
+			al_reconfigure_joysticks();
+			joy = al_get_joystick(0);
 		}
 
 		continue;
